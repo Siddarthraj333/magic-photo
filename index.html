@@ -4,13 +4,26 @@
   <meta charset="UTF-8" />
   <title>Magic Photo</title>
 
-  <!-- Prevent Chrome security warnings -->
+  <!-- Trust & SEO -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Scan the photo and relive the moment." />
+  <meta name="description" content="Scan the photo to relive the moment." />
   <meta name="robots" content="index, follow" />
 
-  <!-- iOS autoplay support -->
+  <!-- Security -->
+  <meta http-equiv="Content-Security-Policy"
+        content="
+        default-src 'self';
+        img-src 'self' data:;
+        media-src https://res.cloudinary.com;
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        " />
+
+  <!-- iOS / Mobile trust -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#111111" />
+
+
 
   <style>
     body {
@@ -62,17 +75,31 @@
   <div class="polaroid">
     <div class="video-wrapper">
       <video
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="auto">
-        <source src="https://res.cloudinary.com/dlrbrlr4z/video/upload/v1769509276/WhatsApp_Video_2026-01-27_at_1.12.34_PM_wal01h.mp4" type="video/mp4">
-      </video>
+  id="magicVideo"
+  muted
+  loop
+  playsinline
+  preload="metadata">
+  <source src="https://res.cloudinary.com/dlrbrlr4z/video/upload/v1769509276/WhatsApp_Video_2026-01-27_at_1.12.34_PM_wal01h.mp4" type="video/mp4">
+</video>
+
     </div>
 
     <div class="caption">Scan for Magic ✨</div>
   </div>
+
+  <script>
+  const video = document.getElementById("magicVideo");
+
+  function startVideo() {
+    video.play();
+    document.removeEventListener("click", startVideo);
+    document.removeEventListener("touchstart", startVideo);
+  }
+
+  document.addEventListener("click", startVideo);
+  document.addEventListener("touchstart", startVideo);
+</script>
 
 </body>
 </html>
