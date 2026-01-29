@@ -40,23 +40,20 @@
       transform: scale(1.02);
     }
 
-    /* Photo area - square like real Polaroid */
+    /* Photo area - will adjust to video aspect ratio */
     .photo-area {
       width: 100%;
-      aspect-ratio: 1 / 1;
       overflow: hidden;
-      background: #f0f0f0;
+      background: #000;
       position: relative;
       border: 1px solid #e0e0e0;
     }
 
     video {
       width: 100%;
-      height: 100%;
-      object-fit: contain;
+      height: auto;
       display: block;
       cursor: pointer;
-      background: #000;
     }
 
     /* Play overlay */
@@ -141,6 +138,7 @@
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
+      z-index: 10;
     }
 
     .muted-hint.show {
@@ -174,12 +172,12 @@
 
 <body>
   <div class="polaroid">
-    <div class="photo-area">
+    <div class="photo-area" id="photoArea">
       <video
         id="magicVideo"
         loop
         playsinline
-        preload="auto"
+        preload="metadata"
         muted>
         <source src="https://res.cloudinary.com/dlrbrlr4z/video/upload/v1769687734/202601291706_bpjiai.mp4" type="video/mp4">
       </video>
@@ -196,9 +194,16 @@
 
   <script>
     const video = document.getElementById("magicVideo");
+    const photoArea = document.getElementById("photoArea");
     const playOverlay = document.getElementById("playOverlay");
     const mutedHint = document.getElementById("mutedHint");
     let hasPlayedOnce = false;
+
+    // Adjust photo area to match video aspect ratio
+    video.addEventListener('loadedmetadata', () => {
+      const aspectRatio = video.videoWidth / video.videoHeight;
+      photoArea.style.aspectRatio = aspectRatio.toString();
+    });
 
     // Attempt autoplay on load (muted)
     window.addEventListener('load', () => {
