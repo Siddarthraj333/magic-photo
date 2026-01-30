@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Magic Photo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+
+    /* Polaroid container */
+    .polaroid {
+      background: #ffffff;
+      width: 90vw;
+      max-width: 380px;
+      border-radius: 4px;
+      box-shadow: 
+        0 4px 8px rgba(0,0,0,0.2),
+        0 12px 40px rgba(0,0,0,0.3);
+      padding: 16px 16px 45px 16px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .polaroid:hover {
+      transform: scale(1.02);
+    }
+
+    /* Photo area */
+    .photo-area {
+      width: 100%;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+      border: 1px solid #e0e0e0;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+
+    /* Teaser screen - shown before unlock time */
+    .teaser-screen {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      text-align: center;
+      color: white;
+    }
+
+    .teaser-screen.hidden {
+      display: none;
+    }
+
+    .lock-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .teaser-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .teaser-message {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      opacity: 0.95;
+    }
+
+    .countdown-timer {
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 12px 20px;
+      border-radius: 20px;
+      margin-top: 10px;
+      backdrop-filter: blur(10px);
+    }
+
+    .countdown-numbers {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+
+    /* Play overlay */
+    .play-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+    }
+
+    .play-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .play-button {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease;
+    }
+
+    .play-overlay:hover .play-button {
+      transform: scale(1.1);
+    }
+
+    .play-button::after {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 25px solid #333;
+      border-top: 15px solid transparent;
+      border-bottom: 15px solid transparent;
+      margin-left: 6px;
+    }
+
+    /* Caption area */
+    .caption {
+      text-align: center;
+      font-size: 16px;
+      color: #333;
+      margin-top: 16px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+    }
+
+    /* Muted indicator */
+    .muted-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .muted-hint.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      .polaroid {
+        max-width: 340px;
+        padding: 14px 14px 40px 14px;
+      }
+
+      .caption {
+        font-size: 14px;
+        margin-top: 12px;
+      }
+
+      .teaser-title {
+        font-size: 20px;
+      }
+
+      .teaser-message {
+        font-size: 14px;
+      }
+
+      .lock-icon {
+        font-size: 50px;
+      }
+
+      .play-button {
+        width: 70px;
+        height: 70px;
+      }
+
+      .play-button::after {
+        border-left-width: 20px;
+        border-top-width: 12px;
+        border-bottom-width: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="polaroid">
+    <div class="photo-area" id="photoArea">
+      <!-- Teaser screen - shown before unlock time -->
+      <div class="teaser-screen" id="teaserScreen">
+        <div class="lock-icon">🎁</div>
+        <div class="teaser-title">Something Special Awaits...</div>
+        <div class="teaser-message">
+          A magical surprise is waiting for you!<br>
+          It will unlock on your special day 💝
+        </div>
+        <div class="countdown-timer">
+          <div>Unlocks in:</div>
+          <div class="countdown-numbers" id="countdown">--:--:--</div>
+        </div>
+      </div>
+
+      <!-- Video - shown after unlock time -->
+      <video
+        id="magicVideo"
+        loop
+        playsinline
+        preload="metadata"
+        muted
+        style="display: none;">
+        
+        <!-- ⭐⭐⭐ PASTE YOUR SURPRISE VIDEO LINK HERE ⭐⭐⭐ -->
+        <!-- Replace the URL below with your Cloudinary video link -->
+        <source src="https://res.cloudinary.com/dlrbrlr4z/video/upload/v1769788293/0130_xjl0fs.mp4" type="video/mp4">
+        <!-- ⭐⭐⭐ PASTE YOUR SURPRISE VIDEO LINK ABOVE ⭐⭐⭐ -->
+        
+      </video>
+      
+      <div class="play-overlay hidden" id="playOverlay">
+        <div class="play-button"></div>
+      </div>
+
+      <div class="muted-hint" id="mutedHint">Tap to unmute 🔊</div>
+    </div>
+
+    <div class="caption" id="caption">✨ A gift from the heart ✨</div>
+  </div>
+
+  <script>
+    // ============================================
+    // 🎂 FINAL VERSION: Unlocks Feb 1, 2026 at Midnight
+    // ============================================
+    const UNLOCK_DATE = new Date(2026, 1, 1, 0, 0, 0); // Feb 1, 2026, 12:00 AM
+    // ============================================
+
+    const video = document.getElementById("magicVideo");
+    const photoArea = document.getElementById("photoArea");
+    const teaserScreen = document.getElementById("teaserScreen");
+    const playOverlay = document.getElementById("playOverlay");
+    const mutedHint = document.getElementById("mutedHint");
+    const caption = document.getElementById("caption");
+    const countdownEl = document.getElementById("countdown");
+    let hasPlayedOnce = false;
+    let isUnlocked = false;
+
+    // Check if content is unlocked
+    function checkUnlockStatus() {
+      const now = new Date();
+      return now >= UNLOCK_DATE;
+    }
+
+    // Update countdown timer
+    function updateCountdown() {
+      const now = new Date();
+      const timeLeft = UNLOCK_DATE - now;
+
+      if (timeLeft <= 0) {
+        unlockContent();
+        return;
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      countdownEl.textContent = 
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    // Unlock the video content
+    function unlockContent() {
+      if (isUnlocked) return;
+      isUnlocked = true;
+
+      // Hide teaser, show video
+      teaserScreen.classList.add('hidden');
+      video.style.display = 'block';
+      
+      // Update caption for birthday
+      caption.textContent = '🎉 Happy Birthday My Love! 🎂';
+
+      // Adjust photo area to match video aspect ratio
+      video.addEventListener('loadedmetadata', () => {
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        photoArea.style.aspectRatio = aspectRatio.toString();
+      });
+
+      // Try to autoplay
+      video.muted = true;
+      video.play().catch(err => {
+        console.log("Autoplay prevented:", err);
+        playOverlay.classList.remove('hidden');
+      });
+    }
+
+    // Initialize
+    function init() {
+      if (checkUnlockStatus()) {
+        unlockContent();
+      } else {
+        // Update countdown every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+      }
+    }
+
+    // Handle video state changes
+    video.addEventListener('play', () => {
+      playOverlay.classList.add('hidden');
+      
+      if (!hasPlayedOnce && video.muted) {
+        mutedHint.classList.add('show');
+        setTimeout(() => {
+          mutedHint.classList.remove('show');
+        }, 3000);
+      }
+    });
+
+    // Click/tap handler for play and unmute
+    function handleInteraction(e) {
+      if (!isUnlocked) return; // Don't allow interaction before unlock
+      
+      e.preventDefault();
+      
+      if (video.paused) {
+        video.muted = false;
+        video.play().then(() => {
+          hasPlayedOnce = true;
+          playOverlay.classList.add('hidden');
+        }).catch(err => {
+          console.log("Play error:", err);
+          video.muted = true;
+          video.play();
+        });
+      } else if (video.muted) {
+        video.muted = false;
+        mutedHint.classList.remove('show');
+      } else {
+        video.pause();
+        playOverlay.classList.remove('hidden');
+      }
+    }
+
+    // Add event listeners
+    playOverlay.addEventListener('click', handleInteraction);
+    playOverlay.addEventListener('touchstart', handleInteraction);
+    video.addEventListener('click', handleInteraction);
+    video.addEventListener('touchstart', handleInteraction);
+    video.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // Start the magic!
+    init();
+  </script>
+</body>
+</html>
