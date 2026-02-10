@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Magic Photo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Scan the photo to relive the moment." />
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .polaroid {
+      background: #fff;
+      width: 320px;
+      padding: 14px 14px 28px;
+      border-radius: 6px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+      text-align: center;
+      position: relative;
+    }
+
+    .video-box {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 4px;
+      background: #000;
+      position: relative;
+      cursor: pointer;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .caption {
+      margin-top: 14px;
+      font-size: 14px;
+      color: #444;
+      letter-spacing: 0.5px;
+    }
+
+    /* Play overlay */
+    .play-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .play-overlay.hidden {
+      opacity: 0;
+    }
+
+    .play-button {
+      width: 70px;
+      height: 70px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
+
+    .play-button::after {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 20px solid #333;
+      border-top: 12px solid transparent;
+      border-bottom: 12px solid transparent;
+      margin-left: 5px;
+    }
+
+    /* Sound hint */
+    .sound-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 15px;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .sound-hint.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="polaroid">
+    <div class="video-box" id="videoBox">
+      <video
+        id="magicVideo"
+        loop
+        playsinline
+        preload="metadata">
+        <source src="https://res.cloudinary.com/dlrbrlr4z/video/upload/v1770702165/WhatsApp_Video_2026-02-09_at_7.28.48_PM_hxkavi.mp4" type="video/mp4">
+      </video>
+      
+      <div class="play-overlay" id="playOverlay">
+        <div class="play-button"></div>
+      </div>
+
+      <div class="sound-hint" id="soundHint">🔊 Tap for sound</div>
+    </div>
+    <div class="caption">Tap to relive the moment ✨</div>
+  </div>
+
+  <script>
+    const video = document.getElementById("magicVideo");
+    const videoBox = document.getElementById("videoBox");
+    const playOverlay = document.getElementById("playOverlay");
+    const soundHint = document.getElementById("soundHint");
+    let isPlaying = false;
+
+    function handleVideoClick() {
+      if (!isPlaying) {
+        // First tap - start playing with sound
+        video.muted = false;
+        video.play().then(() => {
+          isPlaying = true;
+          playOverlay.classList.add('hidden');
+          
+          // Show sound hint briefly
+          soundHint.classList.add('show');
+          setTimeout(() => {
+            soundHint.classList.remove('show');
+          }, 2000);
+        }).catch(err => {
+          // If unmuted play fails (some browsers), try muted first
+          console.log("Unmuted play failed, trying muted:", err);
+          video.muted = true;
+          video.play().then(() => {
+            isPlaying = true;
+            playOverlay.classList.add('hidden');
+            
+            // Show hint to tap again for sound
+            soundHint.textContent = "🔊 Tap again for sound";
+            soundHint.classList.add('show');
+          });
+        });
+      } else if (video.muted) {
+        // Second tap - unmute if currently muted
+        video.muted = false;
+        soundHint.textContent = "🔊 Sound on!";
+        soundHint.classList.add('show');
+        setTimeout(() => {
+          soundHint.classList.remove('show');
+        }, 1500);
+      } else {
+        // Toggle pause/play
+        if (video.paused) {
+          video.play();
+          playOverlay.classList.add('hidden');
+        } else {
+          video.pause();
+          playOverlay.classList.remove('hidden');
+        }
+      }
+    }
+
+    // Listen for clicks/taps on the video box
+    videoBox.addEventListener('click', handleVideoClick);
+    videoBox.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleVideoClick();
+    });
+
+    // Prevent context menu on long press
+    video.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+</body>
+</html>
