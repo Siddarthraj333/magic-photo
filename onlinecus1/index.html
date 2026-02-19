@@ -1,216 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Magic Photo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Scan the photo to relive the moment." />
+<meta charset="UTF-8" />
+<title>Magic Photo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Scan the photo to relive the moment." />
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-    body {
-      min-height: 100vh;
-      background: #111;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
+body {
+  min-height: 100vh;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
-    .polaroid {
-      background: #fff;
-      width: 90vw;
-      max-width: 340px;
-      padding: 14px 14px 28px;
-      border-radius: 6px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-      text-align: center;
-    }
+.polaroid {
+  background: #fff;
+  width: 90vw;
+  max-width: 340px;
+  padding: 14px 14px 28px;
+  border-radius: 6px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  text-align: center;
+}
 
-    .video-box {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      overflow: hidden;
-      border-radius: 4px;
-      background: #000;
-      position: relative;
-    }
+.video-box {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #000;
+  position: relative;
+}
 
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
-    .caption {
-      margin-top: 14px;
-      font-size: 14px;
-      color: #444;
-      letter-spacing: 0.5px;
-    }
+.caption {
+  margin-top: 14px;
+  font-size: 14px;
+  color: #444;
+  letter-spacing: 0.5px;
+}
 
-    /* Play overlay */
-    .play-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: opacity 0.3s ease;
-    }
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
 
-    .play-overlay.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+.play-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 
-    .play-button {
-      width: 70px;
-      height: 70px;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
+.play-button {
+  width: 70px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
 
-    .play-button::after {
-      content: '';
-      width: 0;
-      height: 0;
-      border-left: 20px solid #333;
-      border-top: 12px solid transparent;
-      border-bottom: 12px solid transparent;
-      margin-left: 5px;
-    }
+.play-button::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 20px solid #333;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  margin-left: 5px;
+}
 
-    /* Sound hint */
-    .sound-hint {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.75);
-      color: white;
-      padding: 6px 14px;
-      border-radius: 15px;
-      font-size: 11px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
+.sound-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 15px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
 
-    .sound-hint.show {
-      opacity: 1;
-    }
-  </style>
+.sound-hint.show {
+  opacity: 1;
+}
+</style>
 </head>
 
 <body>
-  <div class="polaroid">
-    <div class="video-box">
-      <video
-        id="magicVideo"
-        loop
-        playsinline
-        webkit-playsinline
-        preload="auto">
-        <source src="https://pub-169729b1eedd4e57a4769cb24685cc0d.r2.dev/VN20260218_183657.mp4" type="video/mp4">
-      </video>
-      
-      <div class="play-overlay" id="playOverlay">
-        <div class="play-button"></div>
-      </div>
+<div class="polaroid">
+  <div class="video-box">
 
-      <div class="sound-hint" id="soundHint">🔊 Tap for sound</div>
+    <!-- IMPORTANT: muted added for iOS -->
+    <video
+      id="magicVideo"
+      loop
+      playsinline
+      webkit-playsinline
+      muted
+      preload="auto">
+      <source src="https://pub-169729b1eedd4e57a4769cb24685cc0d.r2.dev/VN20260218_183657.mp4" type="video/mp4">
+    </video>
+
+    <div class="play-overlay" id="playOverlay">
+      <div class="play-button"></div>
     </div>
-    <div class="caption">Tap to relive the moment ✨</div>
+
+    <div class="sound-hint" id="soundHint">🔊 Tap again for sound</div>
+
   </div>
+  <div class="caption">Tap to relive the moment ✨</div>
+</div>
 
-  <script>
-    const video = document.getElementById("magicVideo");
-    const playOverlay = document.getElementById("playOverlay");
-    const soundHint = document.getElementById("soundHint");
-    let isFirstPlay = true;
+<script>
+const video = document.getElementById("magicVideo");
+const playOverlay = document.getElementById("playOverlay");
+const soundHint = document.getElementById("soundHint");
 
-    function playVideo() {
-      // First, try to play with sound
+let hasPlayedOnce = false;
+
+function handleTap() {
+
+  if (!hasPlayedOnce) {
+    // First tap → play muted (iOS safe)
+    video.play().then(() => {
+      playOverlay.classList.add("hidden");
+      hasPlayedOnce = true;
+
+      soundHint.classList.add("show");
+      setTimeout(() => {
+        soundHint.classList.remove("show");
+      }, 2000);
+
+    }).catch(err => {
+      console.log("Play error:", err);
+    });
+
+  } else {
+
+    if (video.muted) {
+      // Second tap → unmute
       video.muted = false;
-      
-      video.play().then(() => {
-        // Success! Video is playing with sound
-        playOverlay.classList.add('hidden');
-        
-        if (isFirstPlay) {
-          soundHint.classList.add('show');
-          setTimeout(() => {
-            soundHint.classList.remove('show');
-          }, 2000);
-          isFirstPlay = false;
-        }
-      }).catch(() => {
-        // Failed to play with sound, try muted
-        video.muted = true;
-        video.play().then(() => {
-          playOverlay.classList.add('hidden');
-          
-          // Show hint that user needs to tap again for sound
-          soundHint.textContent = "🔊 Tap again for sound";
-          soundHint.classList.add('show');
-          
-          setTimeout(() => {
-            soundHint.classList.remove('show');
-          }, 3000);
-        });
-      });
+
+      soundHint.textContent = "🔊 Sound On!";
+      soundHint.classList.add("show");
+
+      setTimeout(() => {
+        soundHint.classList.remove("show");
+      }, 1500);
+
+    } else {
+      // Pause if already playing with sound
+      video.pause();
+      playOverlay.classList.remove("hidden");
+      hasPlayedOnce = false;
     }
+  }
+}
 
-    function toggleVideo() {
-      if (video.paused) {
-        playVideo();
-      } else {
-        if (video.muted) {
-          // Unmute if currently muted
-          video.muted = false;
-          soundHint.textContent = "🔊 Sound on!";
-          soundHint.classList.add('show');
-          setTimeout(() => {
-            soundHint.classList.remove('show');
-          }, 1500);
-        } else {
-          // Pause the video
-          video.pause();
-          playOverlay.classList.remove('hidden');
-        }
-      }
-    }
+playOverlay.addEventListener("click", handleTap);
+video.addEventListener("click", handleTap);
 
-    // Single click/tap handler for the overlay
-    playOverlay.addEventListener('click', function(e) {
-      e.preventDefault();
-      toggleVideo();
-    });
+video.addEventListener("contextmenu", (e) => e.preventDefault());
+</script>
 
-    // Click/tap on video itself (when playing)
-    video.addEventListener('click', function(e) {
-      e.preventDefault();
-      toggleVideo();
-    });
-
-    // Prevent context menu
-    video.addEventListener('contextmenu', (e) => e.preventDefault());
-  </script>
 </body>
 </html>
