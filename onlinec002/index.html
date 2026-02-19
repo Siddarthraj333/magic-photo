@@ -15,6 +15,7 @@
       align-items: center;
       justify-content: center;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .polaroid {
@@ -35,12 +36,15 @@
       background: #000;
       position: relative;
       cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     video {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
 
     .caption {
@@ -62,11 +66,12 @@
       align-items: center;
       justify-content: center;
       transition: opacity 0.3s ease;
-      pointer-events: none;
+      z-index: 10;
     }
 
     .play-overlay.hidden {
       opacity: 0;
+      pointer-events: none;
     }
 
     .play-button {
@@ -78,7 +83,12 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      pointer-events: none;
+      transform: scale(1);
+      transition: transform 0.2s ease;
+    }
+
+    .play-overlay:active .play-button {
+      transform: scale(0.95);
     }
 
     .play-button::after {
@@ -105,6 +115,7 @@
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
+      z-index: 5;
     }
 
     .sound-hint.show {
@@ -120,7 +131,9 @@
         id="magicVideo"
         loop
         playsinline
-        preload="metadata">
+        webkit-playsinline
+        preload="auto"
+        crossorigin="anonymous">
         <source src="https://pub-169729b1eedd4e57a4769cb24685cc0d.r2.dev/VN20260218_183657.mp4" type="video/mp4">
       </video>
       
@@ -139,33 +152,59 @@
     const playOverlay = document.getElementById("playOverlay");
     const soundHint = document.getElementById("soundHint");
     let isPlaying = false;
+    let hasInteracted = false;
 
-    function handleVideoClick() {
+    // Detect iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    function handleVideoClick(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
       if (!isPlaying) {
-        // First tap - start playing with sound
+        // First tap - start playing
+        hasInteracted = true;
+        
+        // Try to play with sound first
         video.muted = false;
-        video.play().then(() => {
-          isPlaying = true;
-          playOverlay.classList.add('hidden');
-          
-          // Show sound hint briefly
-          soundHint.classList.add('show');
-          setTimeout(() => {
-            soundHint.classList.remove('show');
-          }, 2000);
-        }).catch(err => {
-          // If unmuted play fails (some browsers), try muted first
-          console.log("Unmuted play failed, trying muted:", err);
-          video.muted = true;
-          video.play().then(() => {
+        
+        const playPromise = video.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            // Video started playing with sound
             isPlaying = true;
             playOverlay.classList.add('hidden');
             
-            // Show hint to tap again for sound
-            soundHint.textContent = "🔊 Tap again for sound";
+            // Show sound hint briefly
             soundHint.classList.add('show');
+            setTimeout(() => {
+              soundHint.classList.remove('show');
+            }, 2000);
+          }).catch(err => {
+            // Unmuted play failed (common on iOS Safari)
+            console.log("Unmuted play failed, trying muted:", err);
+            
+            // Try muted play
+            video.muted = true;
+            video.play().then(() => {
+              isPlaying = true;
+              playOverlay.classList.add('hidden');
+              
+              // Show hint to tap again for sound
+              soundHint.textContent = "🔊 Tap again for sound";
+              soundHint.classList.add('show');
+              
+              // Auto-hide after 3 seconds
+              setTimeout(() => {
+                soundHint.classList.remove('show');
+              }, 3000);
+            }).catch(err2 => {
+              console.error("Play failed completely:", err2);
+              alert("Unable to play video. Please try refreshing the page.");
+            });
           });
-        });
+        }
       } else if (video.muted) {
         // Second tap - unmute if currently muted
         video.muted = false;
@@ -186,15 +225,36 @@
       }
     }
 
-    // Listen for clicks/taps on the video box
+    // Listen for both click and touch events
+    playOverlay.addEventListener('click', handleVideoClick);
+    playOverlay.addEventListener('touchend', handleVideoClick);
+    
     videoBox.addEventListener('click', handleVideoClick);
-    videoBox.addEventListener('touchstart', (e) => {
+    videoBox.addEventListener('touchend', (e) => {
       e.preventDefault();
-      handleVideoClick();
+      handleVideoClick(e);
     });
 
     // Prevent context menu on long press
     video.addEventListener('contextmenu', (e) => e.preventDefault());
+    
+    // Handle video ended (shouldn't happen with loop, but just in case)
+    video.addEventListener('ended', () => {
+      video.currentTime = 0;
+      video.play();
+    });
+
+    // iOS specific: Load video metadata
+    if (isIOS) {
+      video.load();
+    }
+
+    // Prevent default touch behavior
+    document.addEventListener('touchstart', function(e) {
+      if (e.target.closest('.video-box')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   </script>
 </body>
 </html>
