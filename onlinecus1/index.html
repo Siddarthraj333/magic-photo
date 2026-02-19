@@ -7,25 +7,29 @@
   <meta name="description" content="Scan the photo to relive the moment." />
 
   <style>
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
-      height: 100vh;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
       background: #111;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .polaroid {
       background: #fff;
-      width: 320px;
+      width: 90vw;
+      max-width: 340px;
       padding: 14px 14px 28px;
       border-radius: 6px;
       box-shadow: 0 15px 40px rgba(0,0,0,0.6);
       text-align: center;
-      position: relative;
     }
 
     .video-box {
@@ -35,9 +39,6 @@
       border-radius: 4px;
       background: #000;
       position: relative;
-      cursor: pointer;
-      -webkit-user-select: none;
-      user-select: none;
     }
 
     video {
@@ -65,8 +66,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
       transition: opacity 0.3s ease;
-      z-index: 10;
     }
 
     .play-overlay.hidden {
@@ -83,12 +84,6 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      transform: scale(1);
-      transition: transform 0.2s ease;
-    }
-
-    .play-overlay:active .play-button {
-      transform: scale(0.95);
     }
 
     .play-button::after {
@@ -115,7 +110,6 @@
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
-      z-index: 5;
     }
 
     .sound-hint.show {
@@ -126,14 +120,13 @@
 
 <body>
   <div class="polaroid">
-    <div class="video-box" id="videoBox">
+    <div class="video-box">
       <video
         id="magicVideo"
         loop
         playsinline
         webkit-playsinline
-        preload="auto"
-        crossorigin="anonymous">
+        preload="auto">
         <source src="https://pub-169729b1eedd4e57a4769cb24685cc0d.r2.dev/VN20260218_183657.mp4" type="video/mp4">
       </video>
       
@@ -148,113 +141,76 @@
 
   <script>
     const video = document.getElementById("magicVideo");
-    const videoBox = document.getElementById("videoBox");
     const playOverlay = document.getElementById("playOverlay");
     const soundHint = document.getElementById("soundHint");
-    let isPlaying = false;
-    let hasInteracted = false;
+    let isFirstPlay = true;
 
-    // Detect iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-    function handleVideoClick(e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPlaying) {
-        // First tap - start playing
-        hasInteracted = true;
+    function playVideo() {
+      // First, try to play with sound
+      video.muted = false;
+      
+      video.play().then(() => {
+        // Success! Video is playing with sound
+        playOverlay.classList.add('hidden');
         
-        // Try to play with sound first
-        video.muted = false;
-        
-        const playPromise = video.play();
-        
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            // Video started playing with sound
-            isPlaying = true;
-            playOverlay.classList.add('hidden');
-            
-            // Show sound hint briefly
-            soundHint.classList.add('show');
-            setTimeout(() => {
-              soundHint.classList.remove('show');
-            }, 2000);
-          }).catch(err => {
-            // Unmuted play failed (common on iOS Safari)
-            console.log("Unmuted play failed, trying muted:", err);
-            
-            // Try muted play
-            video.muted = true;
-            video.play().then(() => {
-              isPlaying = true;
-              playOverlay.classList.add('hidden');
-              
-              // Show hint to tap again for sound
-              soundHint.textContent = "🔊 Tap again for sound";
-              soundHint.classList.add('show');
-              
-              // Auto-hide after 3 seconds
-              setTimeout(() => {
-                soundHint.classList.remove('show');
-              }, 3000);
-            }).catch(err2 => {
-              console.error("Play failed completely:", err2);
-              alert("Unable to play video. Please try refreshing the page.");
-            });
-          });
+        if (isFirstPlay) {
+          soundHint.classList.add('show');
+          setTimeout(() => {
+            soundHint.classList.remove('show');
+          }, 2000);
+          isFirstPlay = false;
         }
-      } else if (video.muted) {
-        // Second tap - unmute if currently muted
-        video.muted = false;
-        soundHint.textContent = "🔊 Sound on!";
-        soundHint.classList.add('show');
-        setTimeout(() => {
-          soundHint.classList.remove('show');
-        }, 1500);
-      } else {
-        // Toggle pause/play
-        if (video.paused) {
-          video.play();
+      }).catch(() => {
+        // Failed to play with sound, try muted
+        video.muted = true;
+        video.play().then(() => {
           playOverlay.classList.add('hidden');
+          
+          // Show hint that user needs to tap again for sound
+          soundHint.textContent = "🔊 Tap again for sound";
+          soundHint.classList.add('show');
+          
+          setTimeout(() => {
+            soundHint.classList.remove('show');
+          }, 3000);
+        });
+      });
+    }
+
+    function toggleVideo() {
+      if (video.paused) {
+        playVideo();
+      } else {
+        if (video.muted) {
+          // Unmute if currently muted
+          video.muted = false;
+          soundHint.textContent = "🔊 Sound on!";
+          soundHint.classList.add('show');
+          setTimeout(() => {
+            soundHint.classList.remove('show');
+          }, 1500);
         } else {
+          // Pause the video
           video.pause();
           playOverlay.classList.remove('hidden');
         }
       }
     }
 
-    // Listen for both click and touch events
-    playOverlay.addEventListener('click', handleVideoClick);
-    playOverlay.addEventListener('touchend', handleVideoClick);
-    
-    videoBox.addEventListener('click', handleVideoClick);
-    videoBox.addEventListener('touchend', (e) => {
+    // Single click/tap handler for the overlay
+    playOverlay.addEventListener('click', function(e) {
       e.preventDefault();
-      handleVideoClick(e);
+      toggleVideo();
     });
 
-    // Prevent context menu on long press
+    // Click/tap on video itself (when playing)
+    video.addEventListener('click', function(e) {
+      e.preventDefault();
+      toggleVideo();
+    });
+
+    // Prevent context menu
     video.addEventListener('contextmenu', (e) => e.preventDefault());
-    
-    // Handle video ended (shouldn't happen with loop, but just in case)
-    video.addEventListener('ended', () => {
-      video.currentTime = 0;
-      video.play();
-    });
-
-    // iOS specific: Load video metadata
-    if (isIOS) {
-      video.load();
-    }
-
-    // Prevent default touch behavior
-    document.addEventListener('touchstart', function(e) {
-      if (e.target.closest('.video-box')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
   </script>
 </body>
 </html>
