@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <title>Magic Photo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Scan the photo to relive the moment." />
 
 <style>
 * {
@@ -24,94 +23,28 @@ body {
 
 .polaroid {
   background: #fff;
-  width: 90vw;
-  max-width: 340px;
-  padding: 14px 14px 28px;
-  border-radius: 6px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  width: 95vw;
+  max-width: 420px;
+  padding: 18px 18px 32px;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
   text-align: center;
 }
 
 .video-box {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #000;
-  position: relative;
+  aspect-ratio: 4 / 5;
 }
 
 video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
 .caption {
   margin-top: 14px;
   font-size: 14px;
   color: #444;
-  letter-spacing: 0.5px;
-}
-
-.play-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
-}
-
-.play-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.play-button {
-  width: 70px;
-  height: 70px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.play-button::after {
-  content: '';
-  width: 0;
-  height: 0;
-  border-left: 20px solid #333;
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
-  margin-left: 5px;
-}
-
-.sound-hint {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.75);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 15px;
-  font-size: 11px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.sound-hint.show {
-  opacity: 1;
 }
 </style>
 </head>
@@ -119,79 +52,14 @@ video {
 <body>
 <div class="polaroid">
   <div class="video-box">
-
-    <!-- IMPORTANT: muted added for iOS -->
-    <video
-      id="magicVideo"
-      loop
+    <video 
+      controls
       playsinline
-      webkit-playsinline
-      muted
-      preload="auto">
-      <source src="https://pub-169729b1eedd4e57a4769cb24685cc0d.r2.dev/VN20260218_183657.mp4" type="video/mp4">
+      preload="metadata">
+      <source src="https://vz-f369372f-c85.b-cdn.net/bce19df2-2793-4853-a90e-5f448cb4514d/playlist.m3u8" type="application/x-mpegURL">
     </video>
-
-    <div class="play-overlay" id="playOverlay">
-      <div class="play-button"></div>
-    </div>
-
-    <div class="sound-hint" id="soundHint">🔊 Tap again for sound</div>
-
   </div>
   <div class="caption">Tap to relive the moment ✨</div>
 </div>
-
-<script>
-const video = document.getElementById("magicVideo");
-const playOverlay = document.getElementById("playOverlay");
-const soundHint = document.getElementById("soundHint");
-
-let hasPlayedOnce = false;
-
-function handleTap() {
-
-  if (!hasPlayedOnce) {
-    // First tap → play muted (iOS safe)
-    video.play().then(() => {
-      playOverlay.classList.add("hidden");
-      hasPlayedOnce = true;
-
-      soundHint.classList.add("show");
-      setTimeout(() => {
-        soundHint.classList.remove("show");
-      }, 2000);
-
-    }).catch(err => {
-      console.log("Play error:", err);
-    });
-
-  } else {
-
-    if (video.muted) {
-      // Second tap → unmute
-      video.muted = false;
-
-      soundHint.textContent = "🔊 Sound On!";
-      soundHint.classList.add("show");
-
-      setTimeout(() => {
-        soundHint.classList.remove("show");
-      }, 1500);
-
-    } else {
-      // Pause if already playing with sound
-      video.pause();
-      playOverlay.classList.remove("hidden");
-      hasPlayedOnce = false;
-    }
-  }
-}
-
-playOverlay.addEventListener("click", handleTap);
-video.addEventListener("click", handleTap);
-
-video.addEventListener("contextmenu", (e) => e.preventDefault());
-</script>
-
 </body>
 </html>
